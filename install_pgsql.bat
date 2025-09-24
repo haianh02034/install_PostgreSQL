@@ -1,44 +1,46 @@
 @echo off
 REM =======================================
-REM PostgreSQL Portable Setup Script - Win10
+REM PostgreSQL Portable Auto Setup - Win10
 REM =======================================
 
 setlocal enabledelayedexpansion
 
-:: --- Cấu hình ---
-set PG_VERSION=16
+:: --- Config ---
+set PG_VERSION=16.4
 set PG_PATH=C:\pgsql
 set PG_DATA=%PG_PATH%\data
 set PG_PORT=5432
 set PG_USER=postgres
-set PG_PASS=postgres
 
-:: --- Kiểm tra thư mục ---
+:: --- Link download binaries (Windows x64 zip từ EDB) ---
+set PG_URL=https://get.enterprisedb.com/postgresql/postgresql-%PG_VERSION%-1-windows-x64-binaries.zip
+set ZIP_FILE=%TEMP%\pgsql.zip
+
+:: --- Check folder ---
 if not exist "%PG_PATH%" (
-    echo [INFO] Chưa có PostgreSQL Portable, hãy giải nén binaries vào %PG_PATH%
-    echo [LINK] Tải tại: https://www.enterprisedb.com/download-postgresql-binaries
-    pause
-    exit /b
+    echo [INFO] Dang tai PostgreSQL %PG_VERSION% binaries...
+    powershell -Command "Invoke-WebRequest -Uri '%PG_URL%' -OutFile '%ZIP_FILE%'"
+
+    echo [INFO] Dang giai nen vao %PG_PATH% ...
+    powershell -Command "Expand-Archive -Path '%ZIP_FILE%' -DestinationPath '%PG_PATH%'"
+
+    del "%ZIP_FILE%"
 )
 
-:: --- Tạo thư mục data nếu chưa có ---
+:: --- Initdb nếu chưa có data ---
 if not exist "%PG_DATA%" (
-    echo [INFO] Dang tao thu muc data...
-    "%PG_PATH%\bin\initdb.exe" -D "%PG_DATA%" -U %PG_USER% -A password -W <<EOF
-%PG_PASS%
-%PG_PASS%
-EOF
+    echo [INFO] Khoi tao data directory...
+    "%PG_PATH%\bin\initdb.exe" -D "%PG_DATA%" -U %PG_USER% -A password -W
 )
 
-:: --- Start PostgreSQL server ---
-echo [INFO] Dang khoi dong PostgreSQL tren port %PG_PORT% ...
+:: --- Start PostgreSQL ---
+echo [INFO] Khoi dong PostgreSQL tren port %PG_PORT% ...
 "%PG_PATH%\bin\pg_ctl.exe" -D "%PG_DATA%" -l "%PG_PATH%\pgsql.log" -o "-p %PG_PORT%" start
 
-:: --- Doi 3s de server len ---
-timeout /t 3 /nobreak >nul
+timeout /t 3 >nul
 
 :: --- Ket noi psql ---
-echo [INFO] Dang ket noi den PostgreSQL...
+echo [INFO] Ket noi PostgreSQL CLI...
 "%PG_PATH%\bin\psql.exe" -U %PG_USER% -h localhost -p %PG_PORT% -d postgres
 
 pause

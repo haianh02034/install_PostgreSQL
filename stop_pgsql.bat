@@ -1,13 +1,34 @@
 @echo off
-REM ================================
-REM Stop PostgreSQL Portable Server
-REM ================================
+REM ===========================================
+REM Stop PostgreSQL Server - Windows
+REM ===========================================
 
-set PG_PATH=C:\pgsql
-set PG_DATA=%PG_PATH%\data
+setlocal enabledelayedexpansion
 
-echo [INFO] Dang dung PostgreSQL...
-"%PG_PATH%\bin\pg_ctl.exe" -D "%PG_DATA%" stop -m fast
+:: --- Cấu hình ---
+set PG_ROOT=C:\pgsql
+set PG_DATA=%PG_ROOT%\data
 
-echo [DONE] PostgreSQL da dung thanh cong!
+:: --- Tìm thư mục bin ---
+set BIN_PATH=
+for /d %%D in ("%PG_ROOT%\*") do (
+    if exist "%%D\bin\pg_ctl.exe" set BIN_PATH=%%D\bin
+)
+if not defined BIN_PATH (
+    echo [ERROR] Khong tim thay thu muc bin trong %PG_ROOT%
+    pause
+    exit /b
+)
+echo [INFO] Su dung bin folder: %BIN_PATH%
+
+:: --- Dừng server ---
+echo [INFO] Dang dung PostgreSQL server...
+"%BIN_PATH%\pg_ctl.exe" -D "%PG_DATA%" stop -m fast
+
+if errorlevel 1 (
+    echo [ERROR] Khong the dung server. Kiem tra server da chay chua.
+) else (
+    echo [INFO] Server da dung thanh cong.
+)
+
 pause
